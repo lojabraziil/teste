@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Jack Burguer (Novo)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: #f0f2f5; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 30px; }
+        h1 { color: #1c1c1c; font-size: 24px; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; transition: 0.3s; }
+        .card.editing { border: 2px solid #3498db; background: #f0f8ff; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px; color: #444; }
+        input, textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; transition: 0.3s; background: #fff; }
+        input:focus, textarea:focus, select:focus { border-color: #ea1d2c; }
+        .btn-group { display: flex; gap: 10px; }
+        .btn-save { flex: 1; background-color: #ea1d2c; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: 700; font-size: 16px; cursor: pointer; }
+        .btn-cancel { display: none; background-color: #7f8c8d; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
+        .admin-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .admin-item-info { display: flex; align-items: center; gap: 15px; }
+        .admin-thumb { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; background: #eee; }
+        .actions { display: flex; gap: 8px; }
+        .btn-mini { padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; border: none; }
+        .btn-edit { background: #e3f2fd; color: #1976d2; border: 1px solid #bbdefb; }
+        .btn-delete { background: #fff0f0; color: #d32f2f; border: 1px solid #ffcccc; }
+
+        /* AREA DE BACKUP */
+        .backup-area { display: flex; gap: 10px; justify-content: center; margin-top: 15px; flex-wrap: wrap; }
+        .btn-backup {
+            background-color: #27ae60; color: white; padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn-restore {
+            background-color: #2980b9; color: white; padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Painel Gerencial 🍔</h1>
+            <p>Conectado ao novo banco: cartoon-56080</p>
+
+            <div class="backup-area">
+                <button class="btn-backup" onclick="fazerBackup()">⬇️ Baixar Backup</button>
+                
+                <input type="file" id="input-restore" accept=".json" style="display: none;" onchange="processarRestauracao(this)">
+                
+                <button class="btn-restore" onclick="document.getElementById('input-restore').click()">⬆️ Restaurar Backup</button>
+            </div>
+        </header>
+
+        <div class="card" id="form-card">
+            <h3 style="margin-bottom:15px; font-size:16px;" id="form-title">Novo Produto</h3>
+            
+            <div class="form-group">
+                <label>Nome do Produto</label>
+                <input type="text" id="nome" placeholder="Ex: X-Salada">
+            </div>
+
+            <div class="form-group">
+                <label>Categoria (Onde vai aparecer?)</label>
+                <select id="categoria">
+                    <option value="Combos Promocionais">Combos Promocionais</option>
+                    <option value="Hamburguer" selected>Hamburguer</option>
+                    <option value="Batata">Batata</option>
+                    <option value="Refrigerante">Refrigerante</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Descrição</label>
+                <textarea id="desc" rows="2" placeholder="Ex: Pão, carne, queijo..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Preço (R$)</label>
+                <input type="number" id="preco" step="0.01" placeholder="Ex: 25.50">
+            </div>
+
+            <div class="form-group">
+                <label>Link da Foto (URL)</label>
+                <input type="text" id="foto" placeholder="https://...">
+            </div>
+
+            <div class="form-group" style="background: #fff8e1; padding: 10px; border-radius: 8px; border: 1px dashed #f1c40f;">
+                <label>Adicionais (Opcional)</label>
+                <input type="text" id="opcoes" placeholder="Ex: Bacon:4.00, Queijo:2.00">
+                <small style="color: #888; display: block; margin-top: 5px;">Separe item e preço por dois pontos e itens por vírgula.</small>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-cancel" id="btn-cancel" onclick="cancelarEdicao()">Cancelar</button>
+                <button class="btn-save" id="btn-save" onclick="salvarProduto()">+ Cadastrar Produto</button>
+            </div>
+        </div>
+
+        <h3>Produtos Cadastrados</h3>
+        <div id="lista-admin" style="margin-top:15px;">Carregando...</div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.21.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, updateDoc, doc } from "https://www.gstatic.com/firebasejs/9.21.0/firebase-firestore.js";
+
+        // --- SUAS NOVAS CHAVES (CARTOON) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCauITcD7xM4-90CF1Oo9p2ZGi58Cqt8S0",
+            authDomain: "cartoon-56080.firebaseapp.com",
+            projectId: "cartoon-56080",
+            storageBucket: "cartoon-56080.firebasestorage.app",
+            messagingSenderId: "901956461712",
+            appId: "1:901956461712:web:74a89581505dc684f0e415",
+            measurementId: "G-X6TJXGYSEK"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let idParaEditar = null;
+        let cacheProdutos = {};
+
+        // --- FUNÇÃO 1: BAIXAR BACKUP (DOWNLOAD) ---
+        window.fazerBackup = function() {
+            const listaParaSalvar = Object.values(cacheProdutos);
+            if (listaParaSalvar.length === 0) {
+                alert("Nenhum produto encontrado para salvar.");
+                return;
+            }
+            const dadosJSON = JSON.stringify(listaParaSalvar, null, 2);
+            const blob = new Blob([dadosJSON], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            const dataHoje = new Date().toISOString().split('T')[0];
+            a.download = `backup_jack_burguer_${dataHoje}.json`;
+            document.body.appendChild(a);
+            a.click(); 
+            document.body.removeChild(a); 
+            URL.revokeObjectURL(url); 
+        }
+
+        // --- FUNÇÃO 2: RESTAURAR BACKUP (UPLOAD) ---
+        window.processarRestauracao = function(inputElement) {
+            const file = inputElement.files[0];
+            if (!file) return;
+
+            if (!confirm("⚠️ ATENÇÃO:\nIsso vai adicionar todos os produtos do arquivo ao cardápio.\n\nSe já existirem produtos, eles podem ficar duplicados.\n\nDeseja continuar?")) {
+                inputElement.value = ''; 
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const conteudo = e.target.result;
+                    const produtosArray = JSON.parse(conteudo);
+
+                    if (!Array.isArray(produtosArray)) {
+                        throw new Error("O arquivo não é uma lista válida.");
+                    }
+
+                    let sucesso = 0;
+                    const btn = document.querySelector('.btn-restore');
+                    const textoOriginal = btn.innerText;
+                    btn.innerText = "⏳ Enviando...";
+                    btn.disabled = true;
+
+                    for (const p of produtosArray) {
+                        const novoItem = {
+                            nome: p.nome || 'Sem Nome',
+                            categoria: p.categoria || 'Hamburguer',
+                            descricao: p.descricao || '',
+                            preco: parseFloat(p.preco) || 0,
+                            foto: p.foto || '',
+                            opcoesString: p.opcoesString || ''
+                        };
+
+                        // Adiciona na coleção "produtos" (padrão desse painel)
+                        await addDoc(collection(db, "produtos"), novoItem);
+                        sucesso++;
+                    }
+
+                    alert(`Sucesso! ${sucesso} produtos restaurados.`);
+                    
+                    btn.innerText = textoOriginal;
+                    btn.disabled = false;
+                    inputElement.value = ''; 
+
+                } catch (err) {
+                    console.error(err);
+                    alert("Erro ao restaurar: " + err.message);
+                    document.querySelector('.btn-restore').innerText = "⬆️ Restaurar Backup";
+                    document.querySelector('.btn-restore').disabled = false;
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        window.salvarProduto = async function() {
+            const btn = document.getElementById('btn-save');
+            const nome = document.getElementById('nome').value;
+            const categoria = document.getElementById('categoria').value;
+            const desc = document.getElementById('desc').value;
+            const preco = parseFloat(document.getElementById('preco').value);
+            const foto = document.getElementById('foto').value;
+            const opcoes = document.getElementById('opcoes').value;
+
+            if (!nome || !preco) return alert("Preencha Nome e Preço.");
+
+            btn.innerText = "Salvando..."; btn.disabled = true;
+
+            try {
+                // Cria o objeto exatamente como o site espera
+                const dados = { nome, categoria, descricao: desc, preco, foto, opcoesString: opcoes };
+
+                if (idParaEditar) {
+                    await updateDoc(doc(db, "produtos", idParaEditar), dados);
+                    alert("Produto atualizado com sucesso!");
+                } else {
+                    await addDoc(collection(db, "produtos"), dados);
+                    alert("Produto cadastrado com sucesso!");
+                }
+                cancelarEdicao();
+            } catch (e) { 
+                console.error(e); 
+                alert("Erro ao salvar. Verifique se o Banco de Dados foi criado no modo de TESTE no Firebase Console."); 
+            } 
+            finally { btn.disabled = false; }
+        }
+
+        window.prepararEdicao = function(id) {
+            const p = cacheProdutos[id];
+            if(!p) return;
+            document.getElementById('nome').value = p.nome;
+            document.getElementById('categoria').value = p.categoria || 'Hamburguer';
+            document.getElementById('desc').value = p.descricao || '';
+            document.getElementById('preco').value = p.preco;
+            document.getElementById('foto').value = p.foto || '';
+            document.getElementById('opcoes').value = p.opcoesString || '';
+
+            idParaEditar = id;
+            document.getElementById('form-card').classList.add('editing');
+            document.getElementById('form-title').innerText = "Editando: " + p.nome;
+            document.getElementById('btn-save').innerText = "Atualizar Produto";
+            document.getElementById('btn-save').style.backgroundColor = "#3498db";
+            document.getElementById('btn-cancel').style.display = "block";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        window.cancelarEdicao = function() {
+            idParaEditar = null;
+            document.getElementById('nome').value = '';
+            document.getElementById('desc').value = '';
+            document.getElementById('preco').value = '';
+            document.getElementById('foto').value = '';
+            document.getElementById('opcoes').value = '';
+            document.getElementById('form-card').classList.remove('editing');
+            document.getElementById('form-title').innerText = "Novo Produto";
+            document.getElementById('btn-save').innerText = "+ Cadastrar Produto";
+            document.getElementById('btn-save').style.backgroundColor = "#ea1d2c";
+            document.getElementById('btn-cancel').style.display = "none";
+        }
+
+        window.deletarProduto = async function(id) {
+            if(confirm("Tem certeza que deseja excluir este produto?")) {
+                await deleteDoc(doc(db, "produtos", id));
+            }
+        }
+
+        // Monitora o banco de dados em tempo real
+        onSnapshot(collection(db, "produtos"), (snapshot) => {
+            const div = document.getElementById('lista-admin');
+            div.innerHTML = ""; 
+            cacheProdutos = {};
+            
+            if(snapshot.empty) {
+                div.innerHTML = "<p style='color:#777; text-align:center;'>Nenhum produto cadastrado ainda.</p>";
+                return;
+            }
+
+            snapshot.forEach((doc) => {
+                const p = doc.data();
+                cacheProdutos[doc.id] = p;
+                div.innerHTML += `
+                    <div class="admin-item">
+                        <div class="admin-item-info">
+                            <img src="${p.foto || 'https://placehold.co/50'}" class="admin-thumb">
+                            <div>
+                                <div style="font-weight:bold;">${p.nome}</div>
+                                <div style="font-size:12px; color:#666;">${p.categoria || 'Sem Categoria'} • R$ ${parseFloat(p.preco).toFixed(2)}</div>
+                            </div>
+                        </div>
+                        <div class="actions">
+                            <button class="btn-mini btn-edit" onclick="prepararEdicao('${doc.id}')">Editar</button>
+                            <button class="btn-mini btn-delete" onclick="deletarProduto('${doc.id}')">Excluir</button>
+                        </div>
+                    </div>`;
+            });
+        });
+    </script>
+</body>
+</html>
